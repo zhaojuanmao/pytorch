@@ -170,7 +170,8 @@ FunctionSchema inferAndCheckSchema(const std::string& schemaOrName) {
 template <typename Implementation>
 Operator createOperator(
     const std::string& schemaOrName,
-    Implementation&& implementation) {
+    Implementation&& implementation,
+    bool allow_reserved_names = false) {
   using Traits = c10::guts::infer_function_traits_t<Implementation>;
   using ArgumentTypes =
       c10::guts::typelist::map_t<decay_t, typename Traits::parameter_types>;
@@ -195,10 +196,12 @@ Operator createOperator(
   // registration to specify alias annotations, we should fix up builtins to
   // use that and remove all references to this note.
   Symbol name = Symbol::fromQualString(schema.name());
-  if (name.is_aten() || name.is_prim() || name.is_onnx()) {
-    AT_ERROR(
-        "Tried to register a custom operator to a reserved namespace: ",
-        name.ns().toUnqualString());
+  if (allow_reserved_names) {
+    if (name.is_aten() || name.is_prim() || name.is_onnx()) {
+      AT_ERROR(
+          "Tried to register a custom operator to a reserved namespace: ",
+          name.ns().toUnqualString());
+    }
   }
 
   return Operator(schema, [implementation, schema](Stack& stack) {
@@ -221,6 +224,9 @@ Operator createOperator(
 struct TORCH_API RegisterOperators {
   RegisterOperators() = default;
 
+  RegisterOperators(bool allow_reserved_names)
+      : allow_reserved_names_(allow_reserved_names) {};
+
   /// Registers a vector of already created `Operator`s.
   RegisterOperators(std::vector<Operator> operators) {
     for (Operator& o : operators) {
@@ -241,10 +247,15 @@ struct TORCH_API RegisterOperators {
   RegisterOperators& op(
       const std::string& name,
       Implementation&& implementation) {
-    registerOperator(
-        createOperator(name, std::forward<Implementation>(implementation)));
+    registerOperator(createOperator(
+        name,
+        std::forward<Implementation>(implementation),
+        allow_reserved_names_));
     return *this;
   }
+
+private:
+  bool allow_reserved_names_;
 };
 
 } // namespace jit

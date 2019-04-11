@@ -1999,6 +1999,10 @@ RegisterOperators reg2({
     Operator("aten::hash(float t) -> int", hashValue<double>),
 });
 
+static auto math_ops =
+    torch::jit::RegisterOperators(/*allow_reserved_names=*/true)
+        .op("aten::sinh", static_cast<double (*)(double)>(&std::sinh));
+
 // reference: _output_size in torch/nn/functional.py
 // size can be none, int or intlist
 // scale_factors can be none, float, or floatlist
