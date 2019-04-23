@@ -112,3 +112,12 @@ struct QualifiedName {
   std::string name_;
 };
 } // namespace c10
+
+namespace std {
+template <>
+struct hash<c10::QualifiedName> {
+  size_t operator()(const c10::QualifiedName& n) const noexcept {
+    return std::hash<std::string>()(n.qualifiedName());
+  }
+};
+} // namespace std
