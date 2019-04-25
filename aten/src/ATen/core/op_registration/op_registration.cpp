@@ -1,5 +1,7 @@
 #include <ATen/core/op_registration/op_registration.h>
+#if !defined(C10_MOBILE)
 #include <torch/csrc/jit/script/function_schema_parser.h>
+#endif
 
 namespace c10 {
 
